@@ -1,0 +1,268 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>guitareval package &#8212; GuitarEvaluator 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="guitareval" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="guitareval-package">
+<h1>guitareval package<a class="headerlink" href="#guitareval-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-guitareval.guitar_evaluator">
+<span id="guitareval-guitar-evaluator-module"></span><h2>guitareval.guitar_evaluator module<a class="headerlink" href="#module-guitareval.guitar_evaluator" title="Permalink to this headline">¶</a></h2>
+<p>This script implements the class GuitarEvaluator for
+guitar onset and pitch analysis. The onset detection system
+uses Sebastian Bock&#8217;s algorithm, based on pre-trained
+Convolutional Neural Networks, implemented in Madmom.
+Pitch estimation is addressed using Justin Salomon&#8217;s
+Melodia algorithm implemented in Essentia library.</p>
+<p>author: Javier Nistal</p>
+<dl class="class">
+<dt id="guitareval.guitar_evaluator.GuitarEvaluator">
+<em class="property">class </em><code class="descclassname">guitareval.guitar_evaluator.</code><code class="descname">GuitarEvaluator</code><span class="sig-paren">(</span><em>sr=22050</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/guitareval/guitar_evaluator.html#GuitarEvaluator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#guitareval.guitar_evaluator.GuitarEvaluator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>This class implements an onset and pitch estimation system for
+guitar audio recordings. The</p>
+<dl class="method">
+<dt id="guitareval.guitar_evaluator.GuitarEvaluator.compute">
+<code class="descname">compute</code><span class="sig-paren">(</span><em>audio</em>, <em>pframe_size=2048</em>, <em>phop_size=128</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/guitareval/guitar_evaluator.html#GuitarEvaluator.compute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#guitareval.guitar_evaluator.GuitarEvaluator.compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes onset detection and pitch estimation on an input
+audio recording. Parameters are tunned for guitar audio
+recordings.
+:type audio: vector_real
+:param audio: input audio recording
+:type pframe_size: int
+:param pframe_size: frame size for pitch estimation
+:type phop_size: int
+:param phop_size: hop size for pitch estimation
+:return: onset and mean pitch estimations</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="guitareval.guitar_evaluator.GuitarEvaluator.effective_note_duration">
+<code class="descname">effective_note_duration</code><span class="sig-paren">(</span><em>audio</em>, <em>onset_times</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/guitareval/guitar_evaluator.html#GuitarEvaluator.effective_note_duration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#guitareval.guitar_evaluator.GuitarEvaluator.effective_note_duration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the effective duration of each guitar note based on
+Essentia&#8217;s EffectiveDuration algorithm. This is measured as the time
+the note envelope is above or equal to a certain threshold.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>audio</strong> (<em>vector_real</em>) &#8211; input audio signal</li>
+<li><strong>onset_times</strong> (<em>vector_real</em>) &#8211; estimated onset times</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">vector_real</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="guitareval.guitar_evaluator.GuitarEvaluator.effective_note_offset">
+<code class="descname">effective_note_offset</code><span class="sig-paren">(</span><em>audio</em>, <em>onset_times</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/guitareval/guitar_evaluator.html#GuitarEvaluator.effective_note_offset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#guitareval.guitar_evaluator.GuitarEvaluator.effective_note_offset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the effective duration of a note given the onset
+times
+:type audio: vector_real
+:param audio: input audio signal
+:type onset_times: vector_int
+:param onset_times: onset time indices</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">vector_int</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">offset time indices</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="guitareval.guitar_evaluator.GuitarEvaluator.mean_pitch_in_slice">
+<code class="descname">mean_pitch_in_slice</code><span class="sig-paren">(</span><em>pitch</em>, <em>i_start</em>, <em>i_end</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/guitareval/guitar_evaluator.html#GuitarEvaluator.mean_pitch_in_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#guitareval.guitar_evaluator.GuitarEvaluator.mean_pitch_in_slice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the mean pitch within each slice</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>pitch</strong> (<em>vector_real</em>) &#8211; input estimated pitch</li>
+<li><strong>i_start</strong> (<em>int</em>) &#8211; start indices of each slice</li>
+<li><strong>i_end</strong> (<em>int</em>) &#8211; end indices of each slice</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">vector_real</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">mean pitch value per slice</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="guitareval.guitar_evaluator.GuitarEvaluator.onset_detection">
+<em class="property">static </em><code class="descname">onset_detection</code><span class="sig-paren">(</span><em>audio</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/guitareval/guitar_evaluator.html#GuitarEvaluator.onset_detection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#guitareval.guitar_evaluator.GuitarEvaluator.onset_detection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Onset detection using Convolutional Neural Networks. This algorithm
+is developed by Sebastian Bock and Jan Schluter and implemented
+in Madmom MIR python library.
+:type audio: vector_real
+:param audio: input audio signal</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Rtype onset_times:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">vector_real</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Return onset_times:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">onset times in samples</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="guitareval.guitar_evaluator.GuitarEvaluator.pitch_estimation">
+<em class="property">static </em><code class="descname">pitch_estimation</code><span class="sig-paren">(</span><em>audio</em>, <em>sr=22050</em>, <em>frame_size=1024</em>, <em>hop_size=128</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/guitareval/guitar_evaluator.html#GuitarEvaluator.pitch_estimation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#guitareval.guitar_evaluator.GuitarEvaluator.pitch_estimation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pitch detection using pitch contour estimation and candidate grouping.
+This algorithm was designed by Justin Salomon and it is implemented
+in Essentia Standard library.
+:type audio: vector_real
+:param audio: input audio signal
+:type sr: int
+:param sr: sample rate
+:type frame_size: int
+:param frame_size: frame size</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>hop_size</strong> (<em>int</em>) &#8211; hop size</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Rtype pitch:</th><td class="field-body">vector_real</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return pitch:</th><td class="field-body">estimated pitch</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-guitareval">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-guitareval" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">guitareval package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-guitareval.guitar_evaluator">guitareval.guitar_evaluator module</a></li>
+<li><a class="reference internal" href="#module-guitareval">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">guitareval</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/guitareval.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Javier Nistal.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/guitareval.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

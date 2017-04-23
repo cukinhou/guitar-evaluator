@@ -1,0 +1,10 @@
+Processing files...
+Total number of detected onsets = 246
+Original number of onsets = 237
+Onset precision = 96.341463
+Onset recall = 100.000000
+Undetected onsets = 0
+correct onsets = 237
+pitch error mean mean = 240.990040 hz
+pitch error var mean = 50280.499936 hz
+Correct notes (pitch and onset) = 208

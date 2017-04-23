@@ -1,0 +1,302 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>tests.test_guitar_evaluator &#8212; GuitarEvaluator 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tests.test_guitar_evaluator</h1><div class="highlight"><pre>
+<span></span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This class implements the evaluation of the GuitarEvaluator.</span>
+<span class="sd">Estimated onsets and pitch values are compared with the annotated</span>
+<span class="sd">data contained in the folder &#39;guitar_data&#39;. The results of the</span>
+<span class="sd">evaluation are stored in a log file in &#39;log&#39; folder. This results</span>
+<span class="sd">contain statistical measurements of the overall performance.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">essentia.standard</span> <span class="k">as</span> <span class="nn">es</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">unittest</span> <span class="k">import</span> <span class="n">TestCase</span>
+<span class="kn">from</span> <span class="nn">guitareval.guitar_evaluator</span> <span class="k">import</span> <span class="n">GuitarEvaluator</span>
+<span class="kn">import</span> <span class="nn">xml.etree.ElementTree</span> <span class="k">as</span> <span class="nn">ET</span>
+
+
+<div class="viewcode-block" id="xml_parser"><a class="viewcode-back" href="../../tests.html#tests.test_guitar_evaluator.xml_parser">[docs]</a><span class="k">def</span> <span class="nf">xml_parser</span><span class="p">(</span><span class="n">xml_file</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reads xml annotated data</span>
+
+<span class="sd">    :param xml_file:</span>
+<span class="sd">    :return: data</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">xml_file</span><span class="p">)</span><span class="o">.</span><span class="n">getroot</span><span class="p">()</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="n">index</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;pitch&#39;</span><span class="p">,</span> <span class="s1">&#39;onsetSec&#39;</span><span class="p">,</span> <span class="s1">&#39;offsetSec&#39;</span><span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="n">n_notes</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s1">&#39;event&#39;</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">event</span><span class="p">:</span>
+            <span class="n">tag</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">tag</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">n_notes</span><span class="p">][</span><span class="n">tag</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+
+        <span class="n">n_notes</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="midi2hz"><a class="viewcode-back" href="../../tests.html#tests.test_guitar_evaluator.midi2hz">[docs]</a><span class="k">def</span> <span class="nf">midi2hz</span><span class="p">(</span><span class="n">midi_note</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts MIDI notes to hertz values</span>
+
+<span class="sd">    :param midi_note:</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">C1</span> <span class="o">=</span> <span class="mf">8.1757989156</span>
+    <span class="k">return</span> <span class="n">C1</span><span class="o">*</span><span class="mf">2.</span><span class="o">**</span><span class="p">(</span><span class="n">midi_note</span><span class="o">/</span><span class="mf">12.</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="onset_evaluation"><a class="viewcode-back" href="../../tests.html#tests.test_guitar_evaluator.onset_evaluation">[docs]</a><span class="k">def</span> <span class="nf">onset_evaluation</span><span class="p">(</span><span class="n">annot</span><span class="p">,</span> <span class="n">estim</span><span class="p">,</span> <span class="n">thres</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="mi">22050</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the evaluation of the onset detection system. &#39;thres&#39;</span>
+<span class="sd">    determines the tolerance to timing differences between</span>
+<span class="sd">    annotations and estimation times.</span>
+
+<span class="sd">    :param annot: original onset times in samples</span>
+<span class="sd">    :param estim: estimated onset times in samples</span>
+<span class="sd">    :param thres: time tolerance [ms]</span>
+<span class="sd">    :param sr: sample rate</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">fp</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">n_correct</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">n_thres</span> <span class="o">=</span> <span class="n">thres</span><span class="o">/</span><span class="mf">1000.</span><span class="o">*</span><span class="n">sr</span>
+    <span class="n">correct_indx</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">correct_index_estim</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">estim</span><span class="p">)):</span>
+        <span class="n">argmin</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">annot</span><span class="o">-</span><span class="n">estim</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+
+        <span class="n">t1</span> <span class="o">=</span> <span class="n">annot</span><span class="p">[</span><span class="n">argmin</span><span class="p">]</span><span class="o">-</span><span class="n">n_thres</span>
+        <span class="n">t2</span> <span class="o">=</span> <span class="n">annot</span><span class="p">[</span><span class="n">argmin</span><span class="p">]</span><span class="o">+</span><span class="n">n_thres</span>
+
+        <span class="k">if</span> <span class="n">t1</span> <span class="o">&lt;</span> <span class="n">estim</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">t2</span><span class="p">:</span>
+            <span class="n">n_correct</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">correct_indx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">correct_indx</span><span class="p">,</span> <span class="n">argmin</span><span class="p">)</span>
+            <span class="n">correct_index_estim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">correct_index_estim</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fp</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="n">fn</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">annot</span><span class="p">)</span><span class="o">-</span><span class="n">n_correct</span>
+    <span class="n">n_detected</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">estim</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fp</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">n_correct</span><span class="p">,</span> <span class="n">correct_indx</span><span class="p">,</span> <span class="n">correct_index_estim</span><span class="p">,</span> <span class="n">n_detected</span></div>
+
+
+<div class="viewcode-block" id="pitch_evaluation"><a class="viewcode-back" href="../../tests.html#tests.test_guitar_evaluator.pitch_evaluation">[docs]</a><span class="k">def</span> <span class="nf">pitch_evaluation</span><span class="p">(</span><span class="n">annot</span><span class="p">,</span> <span class="n">estim</span><span class="p">,</span> <span class="n">thres</span><span class="p">,</span> <span class="n">idx1</span><span class="p">,</span> <span class="n">idx2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the evaluation of the pitch estimation system. &#39;thres&#39;</span>
+<span class="sd">    determines the tolerated deviation of the estimated pitch</span>
+
+<span class="sd">    :param annot: original pitch annotations [hz]</span>
+<span class="sd">    :param estim: estimated pitch [hz]</span>
+<span class="sd">    :param thres: frequency tolerance [hz]</span>
+<span class="sd">    :param idx1: index positions of correct estimated notes in the</span>
+<span class="sd">    annotations vector</span>
+<span class="sd">    :param idx2: index positions of correct estimated notes in the</span>
+<span class="sd">    estimated vector</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">pitch_error</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">n_correct_notes</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">incorrect_notes</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">for</span> <span class="n">i1</span><span class="p">,</span> <span class="n">i2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">idx1</span><span class="p">,</span> <span class="n">idx2</span><span class="p">):</span>
+        <span class="n">err</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">annot</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i1</span><span class="p">)]</span> <span class="o">-</span> <span class="n">estim</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i2</span><span class="p">)])</span>
+
+        <span class="k">if</span> <span class="n">err</span> <span class="o">&gt;</span> <span class="n">thres</span><span class="p">:</span>
+            <span class="n">pitch_error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pitch_error</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+            <span class="n">incorrect_notes</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">n_correct_notes</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="n">incorrect_notes</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">pitch_error</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">mean_pitch_err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">pitch_error</span><span class="p">)</span>
+    <span class="n">var_pitch_err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">pitch_error</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">n_correct_notes</span><span class="p">,</span> <span class="n">mean_pitch_err</span><span class="p">,</span> <span class="n">var_pitch_err</span></div>
+
+
+<div class="viewcode-block" id="TestGuitarEvaluator"><a class="viewcode-back" href="../../tests.html#tests.test_guitar_evaluator.TestGuitarEvaluator">[docs]</a><span class="k">class</span> <span class="nc">TestGuitarEvaluator</span><span class="p">(</span><span class="n">TestCase</span><span class="p">):</span>
+
+    <span class="n">DEFAULT_DATA_PATH</span> <span class="o">=</span> <span class="s1">&#39;guitar_data/&#39;</span>
+    <span class="n">DEFAULT_SAMPLE_RATE</span> <span class="o">=</span> <span class="mi">22050</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="TestGuitarEvaluator.setUpClass"><a class="viewcode-back" href="../../tests.html#tests.test_guitar_evaluator.TestGuitarEvaluator.setUpClass">[docs]</a>    <span class="k">def</span> <span class="nf">setUpClass</span><span class="p">(</span>
+            <span class="n">cls</span><span class="p">,</span>
+            <span class="n">path</span><span class="o">=</span><span class="n">DEFAULT_DATA_PATH</span><span class="p">,</span>
+            <span class="n">sr</span><span class="o">=</span><span class="n">DEFAULT_SAMPLE_RATE</span><span class="p">,</span>
+            <span class="n">timedev</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+            <span class="n">pitchdev</span><span class="o">=</span><span class="mi">10</span>
+    <span class="p">):</span>
+            <span class="n">cls</span><span class="o">.</span><span class="n">evaluator</span> <span class="o">=</span> <span class="n">GuitarEvaluator</span><span class="p">()</span>
+            <span class="n">cls</span><span class="o">.</span><span class="n">sr</span> <span class="o">=</span> <span class="n">sr</span></div>
+
+<div class="viewcode-block" id="TestGuitarEvaluator.test_compute"><a class="viewcode-back" href="../../tests.html#tests.test_guitar_evaluator.TestGuitarEvaluator.test_compute">[docs]</a>    <span class="k">def</span> <span class="nf">test_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">false_positives</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">false_negatives</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">n_correct_onsets</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">total_correct_notes</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">n_detected_tot</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">total_onsets</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="mi">100</span>
+
+        <span class="n">mean_perror</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">var_perror</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">log_name</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;guitar_eval_%H_%M_</span><span class="si">%d</span><span class="s1">_%m_%Y.log&#39;</span><span class="p">)</span>
+        <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;GuitarEvaluator&#39;</span><span class="p">)</span>
+        <span class="n">fhand</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="s1">&#39;log/&#39;</span> <span class="o">+</span> <span class="n">log_name</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">fhand</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Processing files...&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">dirnames</span><span class="p">,</span> <span class="n">filenames</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="s1">&#39;guitar_data/&#39;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">filenames</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.wav&#39;</span><span class="p">):</span>
+
+                    <span class="n">annotations</span> <span class="o">=</span> <span class="n">xml_parser</span><span class="p">(</span><span class="n">root</span><span class="o">+</span><span class="n">filename</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;.xml&#39;</span><span class="p">)</span>
+                    <span class="n">audio</span> <span class="o">=</span> <span class="n">es</span><span class="o">.</span><span class="n">MonoLoader</span><span class="p">(</span>
+                        <span class="n">filename</span><span class="o">=</span><span class="n">root</span><span class="o">+</span><span class="n">filename</span><span class="p">,</span> <span class="n">sampleRate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sr</span>
+                    <span class="p">)()</span>
+                    <span class="n">estimated_onsets</span><span class="p">,</span> <span class="n">estimated_pitch</span> <span class="o">=</span> \
+                        <span class="bp">self</span><span class="o">.</span><span class="n">evaluator</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">audio</span><span class="p">)</span>
+
+                    <span class="n">onsets</span> <span class="o">=</span> <span class="n">annotations</span><span class="p">[</span><span class="s1">&#39;onsetSec&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">sr</span>
+                    <span class="n">pitch</span> <span class="o">=</span> <span class="n">annotations</span><span class="p">[</span><span class="s1">&#39;pitch&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+
+                    <span class="c1"># convert midi notes to hertz</span>
+                    <span class="n">pitch_hz</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">midi2hz</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">pitch</span><span class="p">)</span>
+
+                    <span class="n">fp</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">ncorr</span><span class="p">,</span> <span class="n">corr_an_idx</span><span class="p">,</span> <span class="n">corr_es_idx</span><span class="p">,</span> <span class="n">n_detected</span> \
+                        <span class="o">=</span> <span class="n">onset_evaluation</span><span class="p">(</span><span class="n">onsets</span><span class="p">,</span> <span class="n">estimated_onsets</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+
+                    <span class="n">n_correct_notes</span><span class="p">,</span> <span class="n">mean_pitch_err</span><span class="p">,</span> <span class="n">var_pitch_err</span> <span class="o">=</span> \
+                        <span class="n">pitch_evaluation</span><span class="p">(</span>
+                            <span class="n">pitch_hz</span><span class="p">,</span>
+                            <span class="n">estimated_pitch</span><span class="p">,</span>
+                            <span class="n">thres</span><span class="o">=</span><span class="n">t</span><span class="p">,</span>
+                            <span class="n">idx1</span><span class="o">=</span><span class="n">corr_an_idx</span><span class="p">,</span>
+                            <span class="n">idx2</span><span class="o">=</span><span class="n">corr_es_idx</span>
+                        <span class="p">)</span>
+
+                    <span class="n">total_onsets</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">onsets</span><span class="p">)</span>
+                    <span class="n">n_correct_onsets</span> <span class="o">+=</span> <span class="n">ncorr</span>
+                    <span class="n">total_correct_notes</span> <span class="o">+=</span> <span class="n">n_correct_notes</span>
+
+                    <span class="n">n_detected_tot</span> <span class="o">+=</span> <span class="n">n_detected</span>
+                    <span class="n">false_positives</span> <span class="o">+=</span> <span class="n">fp</span>
+                    <span class="n">false_negatives</span> <span class="o">+=</span> <span class="n">fn</span>
+
+                    <span class="n">mean_perror</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mean_perror</span><span class="p">,</span> <span class="n">mean_pitch_err</span><span class="p">)</span>
+                    <span class="n">var_perror</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">var_perror</span><span class="p">,</span> <span class="n">var_pitch_err</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Total number of detected onsets = </span><span class="si">%i</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">n_detected_tot</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Original number of onsets = </span><span class="si">%i</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">total_onsets</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s1">&#39;Onset precision = </span><span class="si">%f</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">n_correct_onsets</span> <span class="o">*</span> <span class="mf">100.</span> <span class="o">/</span> <span class="n">n_detected_tot</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s1">&#39;Onset recall = </span><span class="si">%f</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">n_correct_onsets</span> <span class="o">*</span> <span class="mf">100.</span> <span class="o">/</span> <span class="n">total_onsets</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Undetected onsets = </span><span class="si">%i</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">false_negatives</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;correct onsets = </span><span class="si">%i</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">n_correct_onsets</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;pitch error mean mean = </span><span class="si">%f</span><span class="s1"> hz&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mean_perror</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;pitch error var mean = </span><span class="si">%f</span><span class="s1"> hz&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">mean_perror</span><span class="p">))</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s1">&#39;Correct notes (pitch and onset) = </span><span class="si">%i</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">total_correct_notes</span>
+        <span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Javier Nistal.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
