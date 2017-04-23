@@ -1,5 +1,5 @@
 ===========
-Movie Rec
+Guitar evaluator
 ===========
 
 GuitarEvaluator computes onset and pitch estimation
@@ -17,7 +17,7 @@ of the onset and pitch detectors. Usage::
     path = 'some_path/audio.wav'
     sr = 22050
 
-    audio = es.MonoLoader(filename=path, sampleRate=sr)
+    audio = es.MonoLoader(filename=path, sampleRate=sr)()
 
     evaluator = GuitarEvaluator(sr)
     onsets, pitch = evaluator.compute(audio)
@@ -28,7 +28,7 @@ Install
 
 First you need to install Essentia MIR library
 as explained in http://essentia.upf.edu/documentation/installing.html
-Then un the following commands from GuitarEvaluator root folder:
+Then in the following commands from GuitarEvaluator root folder:
 
 * easy_install pip (only if you don't have pip installed)
 
